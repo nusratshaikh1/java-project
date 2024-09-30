@@ -1,27 +1,22 @@
 import java.util.Scanner;
 
-// Class representing a patient
 class Patient {
     String name;
     int age;
     String ailment;
 }
 
-// Class managing hospital operations
 class Hospital {
-    private Patient[] patients; // Array to store patients
-    private int patientCount;   // Current number of patients
+    private Patient[] patients; 
+    private int patientCount;   
 
-    // Method to initialize the hospital capacity
     void initialize(int capacity) {
         patients = new Patient[capacity];
         patientCount = 0;
     }
 
-    // Method to add a new patient
     void addPatient(String name, int age, String ailment) {
         if (patientCount < patients.length) {
-            // Create a new Patient object
             patients[patientCount] = new Patient();
             patients[patientCount].name = name;
             patients[patientCount].age = age;
@@ -32,8 +27,6 @@ class Hospital {
             System.out.println("Cannot add more patients; the hospital is at full capacity.");
         }
     }
-
-    // Method to display all patients
     void displayPatients() {
         if (patientCount == 0) {
             System.out.println("No patients in the hospital.");
@@ -46,18 +39,15 @@ class Hospital {
     }
 }
 
-// Main class for running the hospital management program
 public class HospitalManagement3 {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
 
-        // Input hospital capacity
         System.out.print("Enter hospital capacity: ");
         int capacity = scanner.nextInt();
         Hospital hospital = new Hospital();
-        hospital.initialize(capacity); // Initialize hospital capacity
+        hospital.initialize(capacity); 
 
-        // Main loop for the menu
         while (true) {
             System.out.println("\n--- Hospital Management System ---");
             System.out.println("1. Add Patient");
@@ -65,27 +55,27 @@ public class HospitalManagement3 {
             System.out.println("3. Exit");
             System.out.print("Choose an option: ");
             int choice = scanner.nextInt();
-            scanner.nextLine(); // Consume newline
+            scanner.nextLine(); 
 
             switch (choice) {
-                case 1: // Add patient
+                case 1: 
                     System.out.print("Enter patient name: ");
                     String name = scanner.nextLine();
                     System.out.print("Enter patient age: ");
                     int age = scanner.nextInt();
-                    scanner.nextLine(); // Consume newline
+                    scanner.nextLine(); 
                     System.out.print("Enter ailment: ");
                     String ailment = scanner.nextLine();
                     hospital.addPatient(name, age, ailment);
                     break;
-                case 2: // Display patients
+                case 2: 
                     hospital.displayPatients();
                     break;
-                case 3: // Exit
+                case 3: 
                     System.out.println("Exiting the program. Goodbye!");
                     scanner.close();
                     return;
-                default: // Invalid choice
+                default: 
                     System.out.println("Invalid choice. Please try again.");
             }
         }
