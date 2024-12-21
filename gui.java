@@ -1,163 +1,171 @@
-import java.sql.*;
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-
-class Patient {
-    String name;
-    int age;
-    String ailment;
-
-    public Patient(String name, int age, String ailment) {
-        this.name = name;
-        this.age = age;
-        this.ailment = ailment;
-    }
-}
-
-class Hospital {
-    private Connection conn;
-
-    // Constructor establishes the database connection
-    public Hospital() {
-        try {
-            conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/hospitaldb", "root", "");
-            if (conn == null) {
-                JOptionPane.showMessageDialog(null, "Database connection failed!");
-                System.exit(1);
-            }
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "Database connection failed: " + e.getMessage());
-            System.exit(1);
-        }
-    }
-
-    // Add a patient to the database
-    public void addPatient(String name, int age, String ailment) {
-        String query = "INSERT INTO Patients (name, age, ailment) VALUES (?, ?, ?)";
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
-            stmt.setString(1, name);
-            stmt.setInt(2, age);
-            stmt.setString(3, ailment);
-            stmt.executeUpdate();
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "Error adding patient: " + e.getMessage());
-        }
-    }
-
-    // Display all patients from the database
-    public String displayPatients() {
-        StringBuilder patientList = new StringBuilder();
-        String query = "SELECT * FROM Patients";
-        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(query)) {
-            if (!rs.next()) {
-                patientList.append("No patients in the hospital.");
-                return patientList.toString();
-            }
-            do {
-                patientList.append("ID: ").append(rs.getInt("id")).append(", Name: ").append(rs.getString("name"))
-                        .append(", Age: ").append(rs.getInt("age")).append(", Ailment: ").append(rs.getString("ailment"))
-                        .append("\n");
-            } while (rs.next());
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "Error displaying patients: " + e.getMessage());
-        }
-        return patientList.toString();
-    }
-
-    // Close the database connection
-    public void closeConnection() {
-        try {
-            if (conn != null) {
-                conn.close();
-            }
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "Error closing connection: " + e.getMessage());
-        }
-    }
-}
+import java.awt.event.*;
+import java.sql.*;
 
 public class gui {
-    private static Hospital hospital;
-    private static JFrame frame;
-    private static JTextField nameField, ageField, ailmentField;
-    private static JTextArea displayArea;
+    private JFrame frame;
+    private JTextField nameField;
+    private JTextField ageField;
+    private JTextField ailmentField;
+    private JTextArea displayArea;
+    private Hospital hospital;
 
     public static void main(String[] args) {
-        hospital = new Hospital();
+        SwingUtilities.invokeLater(() -> new gui().createAndShowGUI());
+    }
 
-        // Create frame
+    public gui() {
+        hospital = new Hospital(); // Create the Hospital object to manage database operations
+    }
+
+    public void createAndShowGUI() {
+        // Create the main window (JFrame)
         frame = new JFrame("Hospital Management System");
-        frame.setSize(400, 400);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(500, 400);
         frame.setLayout(new BorderLayout());
 
-        // Panel for adding patient
-        JPanel panel = new JPanel();
-        panel.setLayout(new GridLayout(4, 2));
+        // Panel for input fields and buttons
+        JPanel inputPanel = new JPanel();
+        inputPanel.setLayout(new GridLayout(4, 2)); // 4 rows, 2 columns
 
-        panel.add(new JLabel("Patient Name:"));
+        // Input fields for name, age, and ailment
+        inputPanel.add(new JLabel("Patient Name:"));
         nameField = new JTextField();
-        panel.add(nameField);
+        inputPanel.add(nameField);
 
-        panel.add(new JLabel("Patient Age:"));
+        inputPanel.add(new JLabel("Patient Age:"));
         ageField = new JTextField();
-        panel.add(ageField);
+        inputPanel.add(ageField);
 
-        panel.add(new JLabel("Ailment:"));
+        inputPanel.add(new JLabel("Patient Ailment:"));
         ailmentField = new JTextField();
-        panel.add(ailmentField);
+        inputPanel.add(ailmentField);
 
+        // Add "Add Patient" button
         JButton addButton = new JButton("Add Patient");
-        panel.add(addButton);
+        addButton.addActionListener(new AddButtonListener());
+        inputPanel.add(addButton);
 
-        frame.add(panel, BorderLayout.NORTH);
-
-        // Text area for displaying patients
+        // Display area for showing patients
         displayArea = new JTextArea();
         displayArea.setEditable(false);
-        frame.add(new JScrollPane(displayArea), BorderLayout.CENTER);
+        JScrollPane scrollPane = new JScrollPane(displayArea);
 
-        // Button for displaying all patients
+        // Add the components to the frame
+        frame.add(inputPanel, BorderLayout.NORTH);
+        frame.add(scrollPane, BorderLayout.CENTER);
+
+        // Button to display all patients
         JButton displayButton = new JButton("Display Patients");
+        displayButton.addActionListener(new DisplayButtonListener());
         frame.add(displayButton, BorderLayout.SOUTH);
 
-        // Button Actions
-        addButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String name = nameField.getText();
-                int age;
-                try {
-                    age = Integer.parseInt(ageField.getText());
-                } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(frame, "Please enter a valid age.");
+        // Display the frame
+        frame.setVisible(true);
+    }
+
+    // ActionListener for the "Add Patient" button
+    private class AddButtonListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            String name = nameField.getText();
+            int age;
+            try {
+                age = Integer.parseInt(ageField.getText());
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(frame, "Please enter a valid age.");
+                return;
+            }
+            String ailment = ailmentField.getText();
+
+            // Add the patient to the database
+            hospital.addPatient(name, age, ailment);
+
+            // Clear input fields after adding
+            nameField.setText("");
+            ageField.setText("");
+            ailmentField.setText("");
+        }
+    }
+
+    // ActionListener for the "Display Patients" button
+    private class DisplayButtonListener implements ActionListener {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            // Display all patients in the text area
+            hospital.displayPatients(displayArea);
+        }
+    }
+
+    // Inner class for managing the database connection and operations
+    class Hospital {
+        private Connection conn;
+
+        // Constructor establishes the database connection
+        public Hospital() {
+            try {
+                // Update the connection URL, username, and password to use the provided database server details
+                String dbURL = "jdbc:mysql://sql12.freesqldatabase.com:3306/sql12753373";
+                String dbUsername = "sql12753373";
+                String dbPassword = "6RzRIjlnwA";
+
+                // Establish the connection to the database
+                conn = DriverManager.getConnection(dbURL, dbUsername, dbPassword);
+
+                if (conn == null) {
+                    System.out.println("Database connection failed!");
+                    System.exit(1); // Exit if connection fails
+                }
+            } catch (SQLException e) {
+                System.out.println("Database connection failed: " + e.getMessage());
+                System.exit(1); // Exit if connection fails
+            }
+        }
+
+        // Add a patient to the database
+        void addPatient(String name, int age, String ailment) {
+            String query = "INSERT INTO Patients (name, age, ailment) VALUES (?, ?, ?)";
+            try (PreparedStatement stmt = conn.prepareStatement(query)) {
+                stmt.setString(1, name);
+                stmt.setInt(2, age);
+                stmt.setString(3, ailment);
+                stmt.executeUpdate();
+                System.out.println("Patient added successfully.");
+            } catch (SQLException e) {
+                System.out.println("Error adding patient: " + e.getMessage());
+            }
+        }
+
+        // Display all patients from the database
+        void displayPatients(JTextArea textArea) {
+            String query = "SELECT * FROM Patients";
+            try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery(query)) {
+                if (!rs.next()) {
+                    textArea.setText("No patients in the hospital.");
                     return;
                 }
-                String ailment = ailmentField.getText();
+                StringBuilder patientList = new StringBuilder();
+                do {
+                    patientList.append("ID: ").append(rs.getInt("id")).append(", Name: ").append(rs.getString("name"))
+                            .append(", Age: ").append(rs.getInt("age")).append(", Ailment: ").append(rs.getString("ailment")).append("\n");
+                } while (rs.next());
+                textArea.setText(patientList.toString());
+            } catch (SQLException e) {
+                textArea.setText("Error displaying patients: " + e.getMessage());
+            }
+        }
 
-                if (name.isEmpty() || ailment.isEmpty()) {
-                    JOptionPane.showMessageDialog(frame, "Please fill all fields.");
-                } else {
-                    hospital.addPatient(name, age, ailment);
-                    JOptionPane.showMessageDialog(frame, "Patient added successfully.");
-                    nameField.setText("");
-                    ageField.setText("");
-                    ailmentField.setText("");
+        // Close the database connection
+        public void closeConnection() {
+            try {
+                if (conn != null) {
+                    conn.close();
                 }
+            } catch (SQLException e) {
+                System.out.println("Error closing connection: " + e.getMessage());
             }
-        });
-
-        displayButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                String patientList = hospital.displayPatients();
-                displayArea.setText(patientList);
-            }
-        });
-
-        // Show the window
-        frame.setVisible(true);
+        }
     }
 }
